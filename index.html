@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Cacing.io</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #000;
+            background-color: #fff;
+            margin: 20px 0;
+        }
+        h2, h3 {
+            margin: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #menu {
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="menu">
+    <h2>Game Cacing.io</h2>
+    <label for="speedSelect">Pilih Kecepatan:</label>
+    <select id="speedSelect">
+        <option value="100">Normal</option>
+        <option value="80">Cepat</option>
+        <option value="60">Sangat Cepat</option>
+    </select>
+    <button id="playButton">Play</button>
+    <h3>Level: <span id="level">1</span></h3>
+    <h3>Skor Terakhir: <span id="lastScore">0</span></h3>
+</div>
+<canvas id="gameCanvas" width="800" height="600" class="hidden"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const box = 20; // Ukuran setiap bagian cacing
+    let snake, direction, food, score, level, speed;
+    let game; // Menyimpan interval game
+
+    document.getElementById('playButton').addEventListener('click', startGame);
+    document.addEventListener('keydown', changeDirection);
+
+    function startGame() {
+        snake = [{ x: box * 5, y: box * 5 }]; // Cacing awal
+        direction = 'RIGHT'; // Arah awal
+        food = spawnFood(); // Makanan awal
+        score = 0; // Skor awal
+        level = 1; // Level awal
+        speed = parseInt(document.getElementById('speedSelect').value); // Kecepatan berdasarkan pilihan
+        document.getElementById('level').innerText = level;
+        document.getElementById('lastScore').innerText = score;
+        document.getElementById('playButton').classList.add('hidden');
+        canvas.classList.remove('hidden');
+        game = setInterval(gameLoop, speed);
+    }
+
+    function spawnFood() {
+        return {
+            x: Math.floor(Math.random() * (canvas.width / box)) * box,
+            y: Math.floor(Math.random() * (canvas.height / box)) * box,
+        };
+    }
+
+    function changeDirection(event) {
+        if (event.key === 'ArrowUp' && direction !== 'DOWN') {
+            direction = 'UP';
+        } else if (event.key === 'ArrowDown' && direction !== 'UP') {
+            direction = 'DOWN';
+        } else if (event.key === 'ArrowLeft' && direction !== 'RIGHT') {
+            direction = 'LEFT';
+        } else if (event.key === 'ArrowRight' && direction !== 'LEFT') {
+            direction = 'RIGHT';
+        }
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawSnake();
+        drawFood();
+
+        // Menghitung posisi cacing
+        let head = { ...snake[0] };
+        if (direction === 'UP') head.y -= box;
+        if (direction === 'DOWN') head.y += box;
+        if (direction === 'LEFT') head.x -= box;
+        if (direction === 'RIGHT') head.x += box;
+
+        // Menambah bagian cacing
+        snake.unshift(head);
+
+        // Memeriksa apakah cacing memakan makanan
+        if (head.x === food.x && head.y === food.y) {
+            score++; // Tambah skor
+            document.getElementById('lastScore').innerText = score; // Perbarui tampilan skor
+            food = spawnFood(); // Spawn makanan baru
+            if (score % 5 === 0) { // Naikkan level setiap 5 makanan
+                level++;
+                speed -= 10; // Tingkatkan kecepatan
+                clearInterval(game);
+                game = setInterval(gameLoop, speed); // Perbarui interval
+                document.getElementById('level').innerText = level; // Perbarui tampilan level
+            }
+        } else {
+            snake.pop(); // Menghapus bagian cacing terakhir
+        }
+
+        // Memeriksa batas
+        if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || collision(head)) {
+            clearInterval(game);
+            alert('Game Over! Skor akhir: ' + score);
+            document.getElementById('playButton').classList.remove('hidden'); // Tampilkan tombol play
+            canvas.classList.add('hidden'); // Sembunyikan canvas
+        }
+    }
+
+    function drawSnake() {
+        ctx.fillStyle = 'green';
+        for (let part of snake) {
+            ctx.fillRect(part.x, part.y, box, box);
+        }
+    }
+
+    function drawFood() {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(food.x, food.y, box, box);
+    }
+
+    function collision(head) {
+        for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+                return true;
+            }
+        }
+        return false;
+    }
+</script>
+
+</body>
+</html>
